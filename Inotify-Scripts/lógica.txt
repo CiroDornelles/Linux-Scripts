@@ -1,0 +1,33 @@
+variáveis: 
+path 
+arquivo 
+diretóriomonitorado 
+bucket
+
+arquivo de controle precisa ter a variáveis 
+running
+pendent 
+event
+syncronizado 
+
+verificar se o sync está rodando 
+se estiver rodando
+
+if para delete 
+    verificar se o arquivo está no bucket 
+    fazer uma cópia para pasta backup usando o sync 
+    deletar da pasta atual
+    mudar arquivo de controle com a variável running para false      
+if para escrita 
+    fazer uma cópia para tmp 
+    sincronizar conteúdo remoto com o conteúdo local
+    mover o arquivo para o antigo endereço 
+    sincronizar da minha máquina com o bucket 
+    mudar arquivo de controle com a variável running para false      
+if para mover 
+    ver se o path está dentro do diretório monitorado 
+    caso esteja 
+    rodar o sync normal 
+    caso não esteja chamar a função de delete
+    mudar arquivo de controle com a variável running para false      
+else 
