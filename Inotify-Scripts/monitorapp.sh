@@ -64,13 +64,14 @@ delete(){
     :
 }
 
-is_beeing_moved(){
-    lsof | grep $filename | rev | cut -d " " -f 1 | rev
-}
-
 in_moved_from(){
     filename=`echo $file | rev | cut -d "/" -f1 | rev`
-
+    infolder=`find $folderpath -iname $filename`
+    if [ -n "$infolder" ]; then
+        #escrever um arquivo controlador com o caminho antigo do arquivo pra poder fazer o mv no in_moved_to
+    else
+        delete
+    fi
 }
 
 in_moved_to(){
