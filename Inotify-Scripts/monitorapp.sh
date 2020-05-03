@@ -5,6 +5,7 @@ monitoredfolder=$3
 bucketName=$4
 pathinbucket=`echo $file | awk -F "/$monitoredfolder/" '{print $2}'`
 folderpath=`echo $file | awk -F "/$monitoredfolder/" -v folder="/$monitoredfolder" '{print $1folder }'`
+mkdir -p ~/.monitorapp
 
 buckettopcsyncing(){
     #get all the folders in you path variable 
@@ -54,30 +55,44 @@ syncverification(){
         else 
             syncing="false"
         fi 
-          
     done
 }
 
 syncverification
 
 delete(){
-    :
+    aws s3 rm s3://$bucketName/$monitoredfolder/$pathinbucket
 }
 
 in_moved_from(){
     filename=`echo $file | rev | cut -d "/" -f1 | rev`
     infolder=`find $folderpath -iname $filename`
     if [ -n "$infolder" ]; then
-        #escrever um arquivo controlador com o caminho antigo do arquivo pra poder fazer o mv no in_moved_to
+        newpathinbucket=`echo $infolder | awk -F "/$monitoredfolder/" '{print $2}'`
+        isinthebucket=`aws s3 ls s3://$bucketName/$monitoredfolder/$pathinbucket`
+        if [ -n "$isinthebucket" ]; then
+            aws s3 mv s3://$bucketName/$monitoredfolder/$pathinbucket s3://$bucketName/$monitoredfolder/$newpathinbucket
+            inode=`ls -i $infolder | cut -d " " -f1`
+            touch  ~/.monitorapp/$inode
+        else
+            aws s3 cp $infolder s3://$bucketName/$monitoredfolder/$newpathinbucket
+            inode=`ls -i $infolder | cut -d " " -f1`
+            touch  ~/.monitorapp/$inode
+        fi     
     else
         delete
     fi
 }
 
+
+
 in_moved_to(){
-
-    
-
+    inode=`ls -i $file| cut -d " " -f1`
+    if [ -z `cat ~/.monitorapp/$inode` ]; then
+        rm ~/.monitorapp/$inode
+    else
+        write
+    fi
 }
 
 move(){
@@ -91,7 +106,6 @@ move(){
 write(){
     aws s3 cp $file s3://$bucketName/$monitoredfolder/$pathinbucket
 }
-
 
 case "$event" in
     *"DELETE"*)
