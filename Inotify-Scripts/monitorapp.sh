@@ -1,14 +1,14 @@
 #!/bin/bash
+set -x
 event=$1 
 file=$2
 monitoredfolder=$3
 bucketName=$4
-pathinbucket=`echo $file | awk -F "/$monitoredfolder/" '{print $2}'`
-folderpath=`echo $file | awk -F "/$monitoredfolder/" -v folder="/$monitoredfolder" '{print $1folder }'`
+pathinbucket=`echo "$file" | awk -F "/$monitoredfolder/" '{print $2}'`
+folderpath=`echo "$file" | awk -F "/$monitoredfolder/" -v folder="/$monitoredfolder" '{print $1folder }'`
 mkdir -p ~/.monitorapp
 
 buckettopcsyncing(){
-    #get all the folders in you path variable 
     sensitiveawscommands=(cp mv sync)
     IFS=':'
     read -ra pathfolders <<< $PATH
@@ -61,22 +61,23 @@ syncverification(){
 syncverification
 
 delete(){
-    aws s3 rm s3://$bucketName/$monitoredfolder/$pathinbucket
+    aws s3 rm "s3://$bucketName/$monitoredfolder/$pathinbucket"
 }
 
 in_moved_from(){
-    filename=`echo $file | rev | cut -d "/" -f1 | rev`
-    infolder=`find $folderpath -iname $filename`
+    filename=`echo "$file" | rev | cut -d "/" -f1 | rev | sed 's/ /\\ /g'`
+    folderpath=`sed 's/ /\\ /g' <<< $folderpath `
+    infolder=`find "$folderpath" -iname "$filename"`
     if [ -n "$infolder" ]; then
-        newpathinbucket=`echo $infolder | awk -F "/$monitoredfolder/" '{print $2}'`
-        isinthebucket=`aws s3 ls s3://$bucketName/$monitoredfolder/$pathinbucket`
+        newpathinbucket=`echo "$infolder" | awk -F "/$monitoredfolder/" '{print $2}'`
+        isinthebucket=`aws s3 ls "s3://$bucketName/$monitoredfolder/$pathinbucket"`
         if [ -n "$isinthebucket" ]; then
-            aws s3 mv s3://$bucketName/$monitoredfolder/$pathinbucket s3://$bucketName/$monitoredfolder/$newpathinbucket
-            inode=`ls -i $infolder | cut -d " " -f1`
+            aws s3 mv s3://"$bucketName/$monitoredfolder/$pathinbucket" s3://"$bucketName/$monitoredfolder/$newpathinbucket"
+            inode=`ls -i "$infolder" | cut -d " " -f1`
             touch  ~/.monitorapp/$inode
         else
-            aws s3 cp $infolder s3://$bucketName/$monitoredfolder/$newpathinbucket
-            inode=`ls -i $infolder | cut -d " " -f1`
+            aws s3 cp "$infolder" s3://"$bucketName/$monitoredfolder/$newpathinbucket"
+            inode=`ls -i "$infolder" | cut -d " " -f1`
             touch  ~/.monitorapp/$inode
         fi     
     else
@@ -87,7 +88,7 @@ in_moved_from(){
 
 
 in_moved_to(){
-    inode=`ls -i $file| cut -d " " -f1`
+    inode=`ls -i "$file"| cut -d " " -f1`
     if [ -z `cat ~/.monitorapp/$inode` ]; then
         rm ~/.monitorapp/$inode
     else
@@ -104,7 +105,7 @@ move(){
 }
 
 write(){
-    aws s3 cp $file s3://$bucketName/$monitoredfolder/$pathinbucket
+    aws s3 cp "$file" "s3://$bucketName/$monitoredfolder/$pathinbucket"
 }
 
 case "$event" in
