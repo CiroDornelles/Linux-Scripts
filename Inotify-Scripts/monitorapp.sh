@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 event=$1 
 file=$2
 monitoredfolder=$3
@@ -60,6 +59,11 @@ syncverification(){
 
 syncverification
 
+dolphinparthend(){
+    #theese function was put here because dolphin file manager create first a file that ends with .part extension and after move a file to exclude this extension, and this messed up with all the script. 
+    exit 0
+}
+
 delete(){
     aws s3 rm "s3://$bucketName/$monitoredfolder/$pathinbucket"
 }
@@ -85,11 +89,10 @@ in_moved_from(){
     fi
 }
 
-
-
 in_moved_to(){
     inode=`ls -i "$file"| cut -d " " -f1`
-    if [ -z `cat ~/.monitorapp/$inode` ]; then
+    inodefile=`cat ~/.monitorapp/$inode 2>/dev/null`
+    if [ "$inodefile" == "$inode" ]; then
         rm ~/.monitorapp/$inode
     else
         write
@@ -97,6 +100,9 @@ in_moved_to(){
 }
 
 move(){
+    if [[ "$file" = *".part" ]]; then
+        dolphinparthend
+    fi
     if [ "$event" = "IN_MOVED_TO" ]; then
         in_moved_to
     else 
@@ -105,8 +111,18 @@ move(){
 }
 
 write(){
-    aws s3 cp "$file" "s3://$bucketName/$monitoredfolder/$pathinbucket"
+    if [[ "$file" = *".part" ]]; then
+        dolphinparthend
+    else
+        isinthebucket=`aws s3 ls "s3://$bucketName/$monitoredfolder/$pathinbucket"`
+        if [ -n "$isinthebucket" ]; then
+            :
+        else
+            aws s3 cp "$file" "s3://$bucketName/$monitoredfolder/$pathinbucket"
+        fi
+    fi
 }
+
 
 case "$event" in
     *"DELETE"*)
